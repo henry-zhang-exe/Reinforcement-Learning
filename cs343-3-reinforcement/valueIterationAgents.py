@@ -47,28 +47,28 @@ class ValueIterationAgent(ValueEstimationAgent):
         self.values = util.Counter()  # A Counter is a dict with default 0
         # Write value iteration code here
         "*** YOUR CODE HERE ***"
-        for _ in range(iterations):
-            for state in mdp.getStates():
+        for _ in range(0, self.iterations):
+            val_copy = self.values.copy()
+            for state in self.mdp.getStates():
                 if self.mdp.isTerminal(state):
                     self.values[state] = 0
-                valueOfState = self.getValue(state)
-                actions = self.mdp.getPossibleActions(state)
-                for action in actions:
-                    currValue = 0
-                    stateAndProb = mdp.getTransitionStatesAndProbs(state, action)
-                    for pair in stateAndProb:
-                        t = pair[1]
-                        t *= mdp.getReward(state, action, 
-                            pair[0]) + (discount * self.getValue(pair[0]))
-                        currValue += t
-                    if valueOfState < currValue:
-                        valueOfState = currValue
-                self.values[state] = valueOfState
+                else:
+                    valueOfState = float("-inf")
+                    actions = self.mdp.getPossibleActions(state)
+                    for action in actions:
+                        currValue = 0
+                        transitions = mdp.getTransitionStatesAndProbs(state, action)
+                        for transition in transitions:
+                            currValue += transition[1] * (self.mdp.getReward(state, action, transition[0]) + (self.discount * val_copy[transition[0]]))
+                        if currValue > valueOfState:
+                            valueOfState = currValue
+                    self.values[state] = valueOfState
 
     def getValue(self, state):
         """
           Return the value of the state (computed in __init__).
         """
+        
         return self.values[state]
 
     def computeQValueFromValues(self, state, action):
@@ -77,6 +77,11 @@ class ValueIterationAgent(ValueEstimationAgent):
           value function stored in self.values.
         """
         "*** YOUR CODE HERE ***"
+        q_value = 0
+        transitions = self.mdp.getTransitionStatesAndProbs(state, action)
+        for transition in transitions:
+            q_value += transition[1] * (self.mdp.getReward(state, action, transition[0]) + (self.discount * self.getValue(transition[0])))
+        return q_value
 
     def computeActionFromValues(self, state):
         """
@@ -88,6 +93,20 @@ class ValueIterationAgent(ValueEstimationAgent):
           terminal state, you should return None.
         """
         "*** YOUR CODE HERE ***"
+        if self.mdp.isTerminal(state):
+            return None
+        actions = self.mdp.getPossibleActions(state)
+        bestActionVal = float("-inf")
+        bestAction = ""
+        for action in actions:
+            value = 0
+            transitions = self.mdp.getTransitionStatesAndProbs(state, action)
+            for transition in transitions:
+                value += transition[1] * (self.mdp.getReward(state, action, transition[0]) + self.discount * self.getValue(transition[0]))
+            if value > bestActionVal:
+                bestAction = action
+                bestActionVal = value
+        return bestAction
 
     def getPolicy(self, state):
         return self.computeActionFromValues(state)
